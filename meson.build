@@ -3,6 +3,7 @@ project('singularity-loginui', 'c',
   meson_version: '>= 0.59.0',
 )
 
+pkgconfig = import('pkgconfig')
 cc = meson.get_compiler('c')
 
 loginui_deps = [
@@ -24,7 +25,16 @@ loginui_lib = static_library('loginui',
   loginui_sources,
   dependencies: loginui_deps,
   include_directories: include_directories('.', 'src'),
-  install: false,
+  install: true,
+)
+
+install_headers('loginui.h')
+
+pkgconfig.generate(loginui_lib,
+  name: 'singularity-loginui',
+  description: 'Shared Cairo render library for the Singularity login surfaces',
+  filebase: 'singularity-loginui',
+  requires: ['cairo', 'pangocairo', 'gdk-pixbuf-2.0', 'wayland-client'],
 )
 
 loginui_dep = declare_dependency(
