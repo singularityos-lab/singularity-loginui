@@ -19,6 +19,7 @@ loginui_sources = files(
   'src/buffer.c',
   'src/draw.c',
   'src/render.c',
+  'src/widget.c',
 )
 
 loginui_lib = static_library('loginui',
@@ -28,7 +29,7 @@ loginui_lib = static_library('loginui',
   install: true,
 )
 
-install_headers('loginui.h')
+install_headers('loginui.h', 'widget.h')
 
 pkgconfig.generate(loginui_lib,
   name: 'singularity-loginui',
@@ -42,3 +43,11 @@ loginui_dep = declare_dependency(
   include_directories: include_directories('.'),
   dependencies: loginui_deps,
 )
+
+widget_test = executable('widget-test',
+  'test/widget_test.c',
+  dependencies: [loginui_dep],
+  include_directories: include_directories('.', 'src'),
+  install: false,
+)
+test('widget', widget_test)
