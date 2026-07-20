@@ -91,12 +91,13 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
     lui_rounded_rect(cr, fx, fy, fw, field_h, 14);
     cairo_set_source_rgba(cr, 1, 1, 1, 0.08);
     cairo_fill(cr);
-    lui_draw_text(cr, "Sans Bold 12", "Password", fx + 14, fy + 8, 0, 0.96, 0.96, 0.98);
+    const char *auth_label = st->auth_label ? st->auth_label : "Password";
+    lui_draw_text(cr, "Sans Bold 12", auth_label, fx + 14, fy + 8, 0, 0.96, 0.96, 0.98);
     double vcy = fy + 40;
     if (st->password_dots <= 0) {
         int pw, ph;
-        lui_text_size(cr, "Sans 12", "Password", &pw, &ph);
-        lui_draw_text(cr, "Sans 12", "Password", fx + 14, vcy - ph / 2.0, 0, 0.6, 0.6, 0.62);
+        lui_text_size(cr, "Sans 12", auth_label, &pw, &ph);
+        lui_draw_text(cr, "Sans 12", auth_label, fx + 14, vcy - ph / 2.0, 0, 0.6, 0.6, 0.62);
     } else {
         int dots = st->password_dots; if (dots > 20) dots = 20;
         cairo_set_source_rgb(cr, 0.9, 0.9, 0.92);

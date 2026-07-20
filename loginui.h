@@ -30,6 +30,7 @@ typedef struct {
     int password_dots;
     const char *status_text;
     bool status_error;
+    const char *auth_label; /* field label + placeholder; NULL -> "Password" */
 } LoginUiState;
 
 /* align: 0 left, 1 centre, 2 right. */
