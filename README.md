@@ -1,5 +1,9 @@
 # singularity-loginui
 
+> [!IMPORTANT]
+> Report bugs and request features in the
+> [Singularity Desktop tracker](https://github.com/singularityos-lab/singularity-desktop/issues/new/choose).
+
 Shared toolkit-less Cairo render library for the Singularity login surfaces:
 the greeter, the lock screen, the session splash and the boot splash. It draws
 to a `cairo_t` so each consumer can present it on any backend (Wayland
