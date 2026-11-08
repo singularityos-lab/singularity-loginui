@@ -49,7 +49,12 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
     double card_w = 300, card_pad = 14;
     double avatar = 46, field_h = 56;
     double card_h = card_pad + avatar + 14 + field_h + card_pad;
-    if (st->status_text && st->status_text[0]) card_h += 38;
+    double status_h = 0;
+    if (st->status_text && st->status_text[0]) {
+        status_h = lui_wrapped_height(cr, "Sans 12", st->status_text, card_w - 2 * card_pad - 20) + 14;
+        if (status_h < 30) status_h = 30;
+        card_h += status_h + 8;
+    }
 
     double group_w = clock_w + gap + card_w;
     double group_x = (w - group_w) / 2.0;
@@ -126,17 +131,16 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
 
     if (st->status_text && st->status_text[0]) {
         double sy = fy + field_h + 8;
-        double sh = 30;
+        double sh = status_h;
         lui_rounded_rect(cr, fx, sy, fw, sh, 9);
         if (st->status_error) cairo_set_source_rgba(cr, 0.90, 0.30, 0.28, 0.16);
         else cairo_set_source_rgba(cr, 1, 1, 1, 0.07);
         cairo_fill(cr);
-        int sw, sht;
-        lui_text_size(cr, "Sans 12", st->status_text, &sw, &sht);
+        int sht = lui_wrapped_height(cr, "Sans 12", st->status_text, fw - 20);
         if (st->status_error)
-            lui_draw_text(cr, "Sans 12", st->status_text, fx + fw / 2.0, sy + (sh - sht) / 2.0, 1, 0.97, 0.52, 0.48);
+            lui_draw_wrapped(cr, "Sans 12", st->status_text, fx + 10, sy + (sh - sht) / 2.0, fw - 20, 0.97, 0.52, 0.48);
         else
-            lui_draw_text(cr, "Sans 12", st->status_text, fx + fw / 2.0, sy + (sh - sht) / 2.0, 1, 0.82, 0.82, 0.85);
+            lui_draw_wrapped(cr, "Sans 12", st->status_text, fx + 10, sy + (sh - sht) / 2.0, fw - 20, 0.82, 0.82, 0.85);
     }
     cairo_restore(cr);
 

@@ -28,6 +28,35 @@ void lui_draw_text(cairo_t *cr, const char *desc, const char *text,
     g_object_unref(layout);
 }
 
+static PangoLayout *lui_wrapped_layout(cairo_t *cr, const char *desc, const char *text, double width) {
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    PangoFontDescription *fd = lui_font(desc);
+    pango_layout_set_font_description(layout, fd);
+    pango_font_description_free(fd);
+    pango_layout_set_width(layout, (int)(width * PANGO_SCALE));
+    pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
+    pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
+    pango_layout_set_text(layout, text, -1);
+    return layout;
+}
+
+int lui_wrapped_height(cairo_t *cr, const char *desc, const char *text, double width) {
+    PangoLayout *layout = lui_wrapped_layout(cr, desc, text, width);
+    int tw, th;
+    pango_layout_get_pixel_size(layout, &tw, &th);
+    g_object_unref(layout);
+    return th;
+}
+
+void lui_draw_wrapped(cairo_t *cr, const char *desc, const char *text,
+                      double x, double y, double width, double r, double g, double b) {
+    PangoLayout *layout = lui_wrapped_layout(cr, desc, text, width);
+    cairo_set_source_rgb(cr, r, g, b);
+    cairo_move_to(cr, x, y);
+    pango_cairo_show_layout(cr, layout);
+    g_object_unref(layout);
+}
+
 void lui_text_size(cairo_t *cr, const char *desc, const char *text, int *w, int *h) {
     PangoLayout *layout = pango_cairo_create_layout(cr);
     PangoFontDescription *fd = lui_font(desc);
