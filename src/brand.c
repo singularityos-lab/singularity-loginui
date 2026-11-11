@@ -159,3 +159,43 @@ void loginui_progress_write(const char *path, double value) {
     chmod(tmp, 0644);
     rename(tmp, path);
 }
+
+static void notice_font(double logo_size, char *out, size_t len) {
+    int pt = (int)floor(logo_size / 10.0);
+    if (pt < 11) pt = 11;
+    snprintf(out, len, "Sans %d", pt);
+}
+
+void loginui_brand_notice_box(cairo_t *cr, double width, double height, double scale,
+                              const char *text, double *x, double *y, double *w, double *h) {
+    LoginUiBrandLayout l;
+    loginui_brand_layout(width, height, scale, &l);
+    char font[32];
+    notice_font(l.logo_size, font, sizeof font);
+    double box_w = fmin(width * 0.9, floor(l.logo_size * 4.2));
+    *w = box_w;
+    *x = floor((width - box_w) / 2.0);
+    *y = l.bar_y + l.bar_h + floor(l.logo_size * 0.35);
+    *h = text && text[0] ? lui_wrapped_height(cr, font, text, box_w) : 0;
+}
+
+void loginui_render_brand_notice(cairo_t *cr, int width, int height, double scale,
+                                 const char *text, double alpha) {
+    if (!text || !text[0] || alpha <= 0.0) return;
+    LoginUiBrandLayout l;
+    loginui_brand_layout(width, height, scale, &l);
+    char font[32];
+    notice_font(l.logo_size, font, sizeof font);
+    double x, y, w, h;
+    loginui_brand_notice_box(cr, width, height, scale, text, &x, &y, &w, &h);
+    cairo_save(cr);
+    cairo_push_group(cr);
+    cairo_font_options_t *fo = cairo_font_options_create();
+    cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_GRAY);
+    cairo_set_font_options(cr, fo);
+    cairo_font_options_destroy(fo);
+    lui_draw_wrapped(cr, font, text, x, y, w, 0.86, 0.86, 0.88);
+    cairo_pop_group_to_source(cr);
+    cairo_paint_with_alpha(cr, alpha);
+    cairo_restore(cr);
+}

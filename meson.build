@@ -18,6 +18,7 @@ loginui_deps = [
 loginui_sources = files(
   'src/image.c',
   'src/brand.c',
+  'src/gpu.c',
   'src/buffer.c',
   'src/draw.c',
   'src/render.c',
@@ -53,3 +54,10 @@ widget_test = executable('widget-test',
   install: false,
 )
 test('widget', widget_test)
+
+gpu_test = executable('gpu-test',
+  'test/gpu_test.c',
+  dependencies: [loginui_dep],
+  install: false,
+)
+test('gpu notice', gpu_test)

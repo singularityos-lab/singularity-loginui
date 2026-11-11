@@ -74,6 +74,11 @@ double loginui_progress_curve(double from, double to, double elapsed,
                               double tau);
 bool loginui_progress_read(const char *path, double *value);
 void loginui_progress_write(const char *path, double value);
+const char *loginui_gpu_notice(const char *sysfs);
+void loginui_brand_notice_box(cairo_t *cr, double width, double height, double scale,
+                              const char *text, double *x, double *y, double *w, double *h);
+void loginui_render_brand_notice(cairo_t *cr, int width, int height, double scale,
+                                 const char *text, double alpha);
 double loginui_scene_seconds(void);
 void loginui_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r);
 void loginui_text(cairo_t *cr, const char *font, const char *text,
