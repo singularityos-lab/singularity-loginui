@@ -13,6 +13,22 @@ cairo_surface_t *loginui_load_brand_logo(void) {
     return loginui_load_image(path, LOGINUI_BRAND_LOGO_SIZE * 2, LOGINUI_BRAND_LOGO_SIZE * 2);
 }
 
+static void brand_paint_logo(cairo_t *cr, const LoginUiBrandLayout *l,
+                             cairo_surface_t *logo) {
+    int lw = cairo_image_surface_get_width(logo);
+    int lh = cairo_image_surface_get_height(logo);
+    if (lw <= 0 || lh <= 0) return;
+    double s = fmin(l->logo_size / lw, l->logo_size / lh);
+    cairo_save(cr);
+    cairo_translate(cr, l->logo_x + (l->logo_size - lw * s) / 2.0,
+                    l->logo_y + (l->logo_size - lh * s) / 2.0);
+    cairo_scale(cr, s, s);
+    cairo_set_source_surface(cr, logo, 0, 0);
+    cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
+    cairo_paint(cr);
+    cairo_restore(cr);
+}
+
 void loginui_render_brand(cairo_t *cr, int width, int height,
                           cairo_surface_t *logo, double track_alpha,
                           double phase) {
@@ -24,18 +40,7 @@ void loginui_render_brand(cairo_t *cr, int width, int height,
 
     LoginUiBrandLayout l;
     loginui_brand_layout(w, h, 1.0, &l);
-    if (logo) {
-        int lw = cairo_image_surface_get_width(logo);
-        int lh = cairo_image_surface_get_height(logo);
-        if (lw > 0 && lh > 0) {
-            cairo_save(cr);
-            cairo_translate(cr, l.logo_x, l.logo_y);
-            cairo_scale(cr, l.logo_size / lw, l.logo_size / lh);
-            cairo_set_source_surface(cr, logo, 0, 0);
-            cairo_paint(cr);
-            cairo_restore(cr);
-        }
-    }
+    if (logo) brand_paint_logo(cr, &l, logo);
 
     if (track_alpha > 0.0) {
         double r = l.bar_h / 2.0;
@@ -102,19 +107,7 @@ void loginui_render_brand_progress(cairo_t *cr, int width, int height,
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     cairo_set_source_rgb(cr, LOGINUI_BRAND_RED, LOGINUI_BRAND_GREEN, LOGINUI_BRAND_BLUE);
     cairo_paint(cr);
-    if (logo) {
-        int lw = cairo_image_surface_get_width(logo);
-        int lh = cairo_image_surface_get_height(logo);
-        if (lw > 0 && lh > 0) {
-            cairo_save(cr);
-            cairo_translate(cr, l.logo_x, l.logo_y);
-            cairo_scale(cr, l.logo_size / lw, l.logo_size / lh);
-            cairo_set_source_surface(cr, logo, 0, 0);
-            cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
-            cairo_paint(cr);
-            cairo_restore(cr);
-        }
-    }
+    if (logo) brand_paint_logo(cr, &l, logo);
     if (bar_alpha > 0.0) {
         double r = l.bar_h / 2.0;
         lui_rounded_rect(cr, l.bar_x, l.bar_y, l.bar_w, l.bar_h, r);
