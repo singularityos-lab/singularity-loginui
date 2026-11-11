@@ -19,7 +19,7 @@ static void put(const char *dev, const char *name, const char *value) {
 }
 
 static void gpu(const char *dev, const char *vendor, const char *device, const char *driver, int card) {
-    char path[512];
+    char path[1024];
     snprintf(path, sizeof path, "mkdir -p %s/bus/pci/devices/%s %s/bus/pci/drivers", base, dev, base);
     if (system(path) != 0) exit(2);
     put(dev, "class", "0x030000\n");
