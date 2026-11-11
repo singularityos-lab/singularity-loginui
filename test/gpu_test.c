@@ -59,11 +59,11 @@ int main(void) {
     reset();
 
     gpu("0000:01:00.0", "0x10de\n", "0x2182\n", NULL, 0);
-    expect("GTX 1660 Ti without driver", "without acceleration. Details");
+    expect("GTX 1660 Ti without driver", "acceleration has been disabled. For more details");
     reset();
 
     gpu("0000:01:00.0", "0x10de\n", "0x2182\n", "nouveau", 0);
-    expect("nouveau bound but no card, firmware missing", "without acceleration. Details");
+    expect("nouveau bound but no card, firmware missing", "acceleration has been disabled. For more details");
     reset();
 
     gpu("0000:00:02.0", "0x8086\n", "0x3e92\n", "i915", 1);

@@ -68,7 +68,7 @@ const char *loginui_gpu_notice(const char *sysfs) {
     }
     closedir(d);
     if (!broken) return NULL;
-    if (other_works) return "The NVIDIA graphics card did not start, so this computer uses its other graphics card. Details are in Logs.";
-    if (broken_modern) return "The NVIDIA graphics card did not start, so the screen runs without acceleration. Details are in Logs.";
-    return "This NVIDIA graphics card predates the GeForce 16 and RTX series and did not start, so the screen runs without acceleration.";
+    if (other_works) return "The NVIDIA graphics card has encountered an error while starting, so this computer uses its other graphics card. For more details, check Logs.";
+    if (broken_modern) return "The NVIDIA graphics card has encountered an error while starting, so graphics acceleration has been disabled. For more details, check Logs.";
+    return "This NVIDIA graphics card predates the GeForce 16 and RTX series and cannot start, so graphics acceleration has been disabled.";
 }
