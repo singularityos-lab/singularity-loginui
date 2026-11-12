@@ -79,6 +79,13 @@ void loginui_brand_notice_box(cairo_t *cr, double width, double height, double s
                               const char *text, double *x, double *y, double *w, double *h);
 void loginui_render_brand_notice(cairo_t *cr, int width, int height, double scale,
                                  const char *text, double alpha);
+#define LOGINUI_CHANNEL_PATH "/var/lib/sinty/update-channel"
+
+const char *loginui_update_channel(const char *path);
+void loginui_brand_channel_box(cairo_t *cr, double width, double height, double scale,
+                               const char *label, double *x, double *y, double *w, double *h);
+void loginui_render_brand_channel(cairo_t *cr, int width, int height, double scale,
+                                  const char *label, double alpha);
 double loginui_scene_seconds(void);
 void loginui_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r);
 void loginui_text(cairo_t *cr, const char *font, const char *text,

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <gio/gio.h>
+#include <pango/pangocairo.h>
 
 cairo_surface_t *loginui_load_brand_logo(void) {
     const char *path = getenv("SINGULARITY_SPLASH_LOGO");
@@ -198,4 +199,60 @@ void loginui_render_brand_notice(cairo_t *cr, int width, int height, double scal
     cairo_pop_group_to_source(cr);
     cairo_paint_with_alpha(cr, alpha);
     cairo_restore(cr);
+}
+
+static PangoLayout *channel_layout(cairo_t *cr, double logo_size, const char *label) {
+    int pt = (int)floor(logo_size / 16.0);
+    if (pt < 8) pt = 8;
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    PangoFontDescription *fd = pango_font_description_new();
+    pango_font_description_set_family(fd, "Sans");
+    pango_font_description_set_weight(fd, PANGO_WEIGHT_SEMIBOLD);
+    pango_font_description_set_size(fd, pt * PANGO_SCALE);
+    pango_layout_set_font_description(layout, fd);
+    pango_font_description_free(fd);
+    PangoAttrList *attrs = pango_attr_list_new();
+    pango_attr_list_insert(attrs, pango_attr_letter_spacing_new(pt * PANGO_SCALE / 4));
+    pango_layout_set_attributes(layout, attrs);
+    pango_attr_list_unref(attrs);
+    pango_layout_set_text(layout, label, -1);
+    return layout;
+}
+
+void loginui_brand_channel_box(cairo_t *cr, double width, double height, double scale,
+                               const char *label, double *x, double *y, double *w, double *h) {
+    LoginUiBrandLayout l;
+    loginui_brand_layout(width, height, scale, &l);
+    *y = l.bar_y + l.bar_h + floor(l.logo_size * 0.12);
+    *x = floor(width / 2.0);
+    *w = *h = 0;
+    if (!label || !label[0]) return;
+    PangoLayout *layout = channel_layout(cr, l.logo_size, label);
+    int tw, th;
+    pango_layout_get_pixel_size(layout, &tw, &th);
+    g_object_unref(layout);
+    *w = tw;
+    *h = th;
+    *x = floor((width - tw) / 2.0);
+}
+
+void loginui_render_brand_channel(cairo_t *cr, int width, int height, double scale,
+                                  const char *label, double alpha) {
+    if (!label || !label[0] || alpha <= 0.0) return;
+    LoginUiBrandLayout l;
+    loginui_brand_layout(width, height, scale, &l);
+    double x, y, w, h;
+    loginui_brand_channel_box(cr, width, height, scale, label, &x, &y, &w, &h);
+    PangoLayout *layout = channel_layout(cr, l.logo_size, label);
+    cairo_save(cr);
+    cairo_font_options_t *fo = cairo_font_options_create();
+    cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_GRAY);
+    pango_cairo_context_set_font_options(pango_layout_get_context(layout), fo);
+    pango_layout_context_changed(layout);
+    cairo_font_options_destroy(fo);
+    cairo_set_source_rgba(cr, 1, 1, 1, 0.55 * alpha);
+    cairo_move_to(cr, x, y);
+    pango_cairo_show_layout(cr, layout);
+    cairo_restore(cr);
+    g_object_unref(layout);
 }

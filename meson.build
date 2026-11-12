@@ -19,6 +19,7 @@ loginui_sources = files(
   'src/image.c',
   'src/brand.c',
   'src/gpu.c',
+  'src/channel.c',
   'src/buffer.c',
   'src/draw.c',
   'src/render.c',
