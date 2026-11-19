@@ -12,6 +12,7 @@ loginui_deps = [
   dependency('gdk-pixbuf-2.0'),
   dependency('gio-2.0'),
   dependency('wayland-client'),
+  dependency('xkbcommon'),
   cc.find_library('m', required: false),
 ]
 
@@ -24,6 +25,7 @@ loginui_sources = files(
   'src/draw.c',
   'src/render.c',
   'src/widget.c',
+  'src/keypad.c',
 )
 
 loginui_lib = static_library('loginui',
@@ -39,7 +41,7 @@ pkgconfig.generate(loginui_lib,
   name: 'singularity-loginui',
   description: 'Shared Cairo render library for the Singularity login surfaces',
   filebase: 'singularity-loginui',
-  requires: ['cairo', 'pangocairo', 'gdk-pixbuf-2.0', 'gio-2.0', 'wayland-client'],
+  requires: ['cairo', 'pangocairo', 'gdk-pixbuf-2.0', 'gio-2.0', 'wayland-client', 'xkbcommon'],
 )
 
 loginui_dep = declare_dependency(
@@ -62,3 +64,10 @@ gpu_test = executable('gpu-test',
   install: false,
 )
 test('gpu notice', gpu_test)
+
+keypad_test = executable('keypad-test',
+  'test/keypad_test.c',
+  dependencies: [loginui_dep],
+  install: false,
+)
+test('keypad', keypad_test)

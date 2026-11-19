@@ -20,6 +20,55 @@ struct loginui_buffer *loginui_create_buffer(struct wl_shm *shm,
                                              uint32_t w, uint32_t h,
                                              cairo_t **cr_out);
 
+struct xkb_keymap;
+
+typedef enum {
+    LOGINUI_KEYPAD_LETTERS,
+    LOGINUI_KEYPAD_SYMBOLS,
+    LOGINUI_KEYPAD_DIGITS,
+} LoginUiKeypadPage;
+
+typedef enum {
+    LOGINUI_KEYPAD_NONE,
+    LOGINUI_KEYPAD_TEXT,
+    LOGINUI_KEYPAD_BACKSPACE,
+    LOGINUI_KEYPAD_ENTER,
+} LoginUiKeypadAction;
+
+#define LOGINUI_KEYPAD_LETTERS_MAX 26
+#define LOGINUI_KEYPAD_SYMBOLS_MAX 96
+#define LOGINUI_KEYPAD_KEYS_MAX 48
+
+typedef struct {
+    int kind;
+    char text[8];
+    double weight;
+    double x, y, w, h;
+} LoginUiKey;
+
+typedef struct {
+    LoginUiKeypadPage page;
+    bool shift;
+    bool caps;
+    int symbol_page;
+    int pressed;
+    char letters[LOGINUI_KEYPAD_LETTERS_MAX][2][8];
+    char symbols[LOGINUI_KEYPAD_SYMBOLS_MAX][8];
+    int n_symbols;
+    LoginUiKey keys[LOGINUI_KEYPAD_KEYS_MAX];
+    int n_keys;
+} LoginUiKeypad;
+
+void loginui_keypad_init(LoginUiKeypad *k, struct xkb_keymap *keymap, LoginUiKeypadPage page);
+void loginui_keypad_set_keymap(LoginUiKeypad *k, struct xkb_keymap *keymap);
+void loginui_keypad_set_page(LoginUiKeypad *k, LoginUiKeypadPage page);
+double loginui_keypad_height(const LoginUiKeypad *k);
+void loginui_keypad_render(cairo_t *cr, LoginUiKeypad *k, double x, double y, double w);
+int loginui_keypad_key_at(const LoginUiKeypad *k, double x, double y);
+LoginUiKeypadAction loginui_keypad_activate(LoginUiKeypad *k, int key, char *text, size_t size);
+
+bool loginui_compact(int width, int height);
+
 typedef struct {
     int width, height;
     const char *username;
@@ -36,6 +85,8 @@ typedef struct {
     double clock_dy;
     double card_dx;
     double content_fade;
+    double cover;
+    LoginUiKeypad *keypad;
 } LoginUiState;
 
 /* align: 0 left, 1 centre, 2 right. */
