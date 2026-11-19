@@ -3,20 +3,6 @@
 
 #include <math.h>
 
-static void paint_cover(cairo_t *cr, cairo_surface_t *surface, double w, double h, double alpha) {
-    int bw = cairo_image_surface_get_width(surface);
-    int bh = cairo_image_surface_get_height(surface);
-    if (bw < 1 || bh < 1) return;
-    double scale = w / bw; if (h / bh > scale) scale = h / bh;
-    cairo_save(cr);
-    cairo_translate(cr, (w - bw * scale) / 2.0, (h - bh * scale) / 2.0);
-    cairo_scale(cr, scale, scale);
-    cairo_set_source_surface(cr, surface, 0, 0);
-    if (alpha >= 1.0) cairo_paint(cr);
-    else cairo_paint_with_alpha(cr, alpha);
-    cairo_restore(cr);
-}
-
 bool loginui_compact(int width, int height) {
     return height > width || width < 640;
 }
@@ -116,8 +102,11 @@ static void draw_card(cairo_t *cr, const LoginUiState *st, const CardMetrics *m,
 
 static void draw_swipe_hint(cairo_t *cr, double w, double h, double alpha) {
     if (alpha <= 0.0) return;
-    cairo_push_group(cr);
     double cx = w / 2.0, cy = h - 78;
+    cairo_save(cr);
+    cairo_rectangle(cr, 0, cy - 12, w, 60);
+    cairo_clip(cr);
+    cairo_push_group(cr);
     cairo_move_to(cr, cx - 12, cy + 5);
     cairo_line_to(cr, cx, cy - 5);
     cairo_line_to(cr, cx + 12, cy + 5);
@@ -129,6 +118,7 @@ static void draw_swipe_hint(cairo_t *cr, double w, double h, double alpha) {
     lui_draw_text(cr, "Sans 13", "Swipe up to unlock", cx, cy + 16, 1, 0.92, 0.92, 0.94);
     cairo_pop_group_to_source(cr);
     cairo_paint_with_alpha(cr, alpha > 1.0 ? 1.0 : alpha);
+    cairo_restore(cr);
 }
 
 static void render_compact(cairo_t *cr, const LoginUiState *st,
@@ -165,11 +155,15 @@ static void render_compact(cairo_t *cr, const LoginUiState *st,
     if (card_h_out) *card_h_out = m.h;
 
     if (cover < 1.0) {
-        cairo_push_group(cr);
+        cairo_save(cr);
         cairo_translate(cr, st->card_dx, cover * 48);
+        cairo_rectangle(cr, card_x - 2, card_y - 2, card_w + 4, m.h + 4);
+        cairo_clip(cr);
+        cairo_push_group(cr);
         draw_card(cr, st, &m, card_x, card_y);
         cairo_pop_group_to_source(cr);
         cairo_paint_with_alpha(cr, 1.0 - cover);
+        cairo_restore(cr);
     }
     if (st->keypad && cover < 1.0)
         loginui_keypad_render(cr, st->keypad, 0, h - kp_h + cover * (kp_h + 20), w);
@@ -184,13 +178,13 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
     double w = st->width, h = st->height;
 
     if (st->background) {
-        paint_cover(cr, st->background, w, h, 1.0);
+        lui_paint_cover(cr, st->background, w, h, 1.0);
     } else {
         cairo_set_source_rgb(cr, 0.10, 0.10, 0.11);
         cairo_paint(cr);
     }
     if (st->background_sharp && st->sharpness > 0.0)
-        paint_cover(cr, st->background_sharp, w, h, st->sharpness > 1.0 ? 1.0 : st->sharpness);
+        lui_paint_cover(cr, st->background_sharp, w, h, st->sharpness > 1.0 ? 1.0 : st->sharpness);
 
     bool faded = st->content_fade > 0.0;
     if (faded) {

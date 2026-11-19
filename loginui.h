@@ -15,10 +15,15 @@ struct loginui_buffer {
     void *data;
     size_t size;
     struct wl_buffer *wl_buffer;
+    uint32_t width, height;
+    bool pooled;
+    bool busy;
 };
 struct loginui_buffer *loginui_create_buffer(struct wl_shm *shm,
                                              uint32_t w, uint32_t h,
                                              cairo_t **cr_out);
+struct loginui_buffer *loginui_pool_buffer(struct wl_shm *shm, struct loginui_buffer **slots, int n,
+                                           uint32_t w, uint32_t h, cairo_t **cr_out);
 
 struct xkb_keymap;
 
