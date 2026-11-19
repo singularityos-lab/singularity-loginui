@@ -24,6 +24,7 @@ struct loginui_buffer *loginui_create_buffer(struct wl_shm *shm,
                                              cairo_t **cr_out);
 struct loginui_buffer *loginui_pool_buffer(struct wl_shm *shm, struct loginui_buffer **slots, int n,
                                            uint32_t w, uint32_t h, cairo_t **cr_out);
+void loginui_pool_release(struct loginui_buffer **slots, int n);
 
 struct xkb_keymap;
 
@@ -73,6 +74,37 @@ int loginui_keypad_key_at(const LoginUiKeypad *k, double x, double y);
 LoginUiKeypadAction loginui_keypad_activate(LoginUiKeypad *k, int key, char *text, size_t size);
 
 bool loginui_compact(int width, int height);
+
+typedef enum {
+    LOGINUI_GESTURE_NONE,
+    LOGINUI_GESTURE_REDRAW,
+    LOGINUI_GESTURE_TAP,
+    LOGINUI_GESTURE_KEY,
+} LoginUiGestureEvent;
+
+typedef struct {
+    double cover, cover_from, cover_target, cover_t0;
+    bool pressing, swiped, dragging;
+    double press_y, last_y, last_dy, drag_base;
+    double last_input;
+    int32_t touch_id;
+    double touch_x, touch_y;
+} LoginUiGesture;
+
+void loginui_gesture_init(LoginUiGesture *g);
+bool loginui_gesture_covered(const LoginUiGesture *g, bool keypad_shown);
+bool loginui_gesture_set_cover(LoginUiGesture *g, double target, double now);
+bool loginui_gesture_animating(const LoginUiGesture *g);
+bool loginui_gesture_tick(LoginUiGesture *g, double now);
+bool loginui_gesture_idle(const LoginUiGesture *g, bool keypad_shown, double now, double timeout);
+LoginUiGestureEvent loginui_gesture_press(LoginUiGesture *g, LoginUiKeypad *kp, bool keypad_shown,
+                                          double x, double y, double now);
+LoginUiGestureEvent loginui_gesture_motion(LoginUiGesture *g, LoginUiKeypad *kp, bool keypad_shown,
+                                           double x, double y, double height, double now);
+LoginUiGestureEvent loginui_gesture_release(LoginUiGesture *g, LoginUiKeypad *kp, bool keypad_shown,
+                                            double x, double y, double now, int *key);
+bool loginui_gesture_cancel(LoginUiGesture *g, LoginUiKeypad *kp);
+
 
 typedef struct {
     int width, height;

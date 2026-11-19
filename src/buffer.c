@@ -78,3 +78,13 @@ struct loginui_buffer *loginui_pool_buffer(struct wl_shm *shm, struct loginui_bu
     *cr_out = buffer_cairo(slots[free_slot]);
     return slots[free_slot];
 }
+
+void loginui_pool_release(struct loginui_buffer **slots, int n) {
+    for (int i = 0; i < n; i++) {
+        struct loginui_buffer *b = slots[i];
+        if (!b) continue;
+        if (b->busy) b->pooled = false;
+        else buffer_destroy(b);
+        slots[i] = NULL;
+    }
+}

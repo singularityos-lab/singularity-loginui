@@ -26,6 +26,7 @@ loginui_sources = files(
   'src/render.c',
   'src/widget.c',
   'src/keypad.c',
+  'src/gesture.c',
 )
 
 loginui_lib = static_library('loginui',
@@ -71,3 +72,10 @@ keypad_test = executable('keypad-test',
   install: false,
 )
 test('keypad', keypad_test)
+
+gesture_test = executable('gesture-test',
+  'test/gesture_test.c',
+  dependencies: [loginui_dep],
+  install: false,
+)
+test('gesture', gesture_test)
