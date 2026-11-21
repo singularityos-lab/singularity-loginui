@@ -26,6 +26,7 @@ loginui_sources = files(
   'src/render.c',
   'src/widget.c',
   'src/keypad.c',
+  'src/pattern.c',
   'src/gesture.c',
 )
 

@@ -106,6 +106,28 @@ LoginUiGestureEvent loginui_gesture_release(LoginUiGesture *g, LoginUiKeypad *kp
 bool loginui_gesture_cancel(LoginUiGesture *g, LoginUiKeypad *kp);
 
 
+#define LOGINUI_PATTERN_MAX 9
+
+typedef struct {
+    int path[LOGINUI_PATTERN_MAX];
+    int n;
+    bool tracking;
+    bool error;
+    bool laid_out;
+    double finger_x, finger_y;
+    double cx[9], cy[9], radius;
+    double link_x, link_y, link_w, link_h;
+} LoginUiPattern;
+
+void loginui_pattern_reset(LoginUiPattern *p);
+double loginui_pattern_height(double width);
+void loginui_pattern_render(cairo_t *cr, LoginUiPattern *p, const char *fallback,
+                            double x, double y, double w);
+bool loginui_pattern_press(LoginUiPattern *p, double x, double y);
+bool loginui_pattern_motion(LoginUiPattern *p, double x, double y);
+size_t loginui_pattern_release(LoginUiPattern *p, char *out, size_t size);
+bool loginui_pattern_link_at(const LoginUiPattern *p, double x, double y);
+
 typedef struct {
     int width, height;
     const char *username;
@@ -117,6 +139,7 @@ typedef struct {
     const char *status_text;
     bool status_error;
     const char *auth_label; /* field label + placeholder; NULL -> "Password" */
+    const char *auth_hint;
     cairo_surface_t *background_sharp;
     double sharpness;
     double clock_dy;
@@ -124,6 +147,8 @@ typedef struct {
     double content_fade;
     double cover;
     LoginUiKeypad *keypad;
+    LoginUiPattern *pattern;
+    const char *pattern_fallback;
 } LoginUiState;
 
 /* align: 0 left, 1 centre, 2 right. */

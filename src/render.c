@@ -72,8 +72,9 @@ static void draw_card(cairo_t *cr, const LoginUiState *st, const CardMetrics *m,
     double vcy = fy + 40;
     if (st->password_dots <= 0) {
         int pw, ph;
-        lui_text_size(cr, "Sans 12", auth_label, &pw, &ph);
-        lui_draw_text(cr, "Sans 12", auth_label, fx + 14, vcy - ph / 2.0, 0, 0.6, 0.6, 0.62);
+        const char *hint = st->auth_hint ? st->auth_hint : auth_label;
+        lui_text_size(cr, "Sans 12", hint, &pw, &ph);
+        lui_draw_text(cr, "Sans 12", hint, fx + 14, vcy - ph / 2.0, 0, 0.6, 0.6, 0.62);
     } else {
         int dots = st->password_dots;
         int max_dots = (int)((fw - 28) / 16) + 1;
@@ -144,9 +145,10 @@ static void render_compact(cairo_t *cr, const LoginUiState *st,
     CardMetrics m;
     measure_card(cr, st, card_w, &m);
 
-    double kp_h = st->keypad ? loginui_keypad_height(st->keypad) : 0;
+    double kp_h = st->pattern ? loginui_pattern_height(w)
+        : st->keypad ? loginui_keypad_height(st->keypad) : 0;
     double card_x = (w - card_w) / 2.0;
-    double card_y = st->keypad ? h - kp_h - 20 - m.h : h * 0.55 - m.h / 2.0;
+    double card_y = kp_h > 0 ? h - kp_h - 20 - m.h : h * 0.55 - m.h / 2.0;
     if (card_y < clock_bottom + 24) card_y = clock_bottom + 24;
 
     if (card_x_out) *card_x_out = card_x;
@@ -165,10 +167,20 @@ static void render_compact(cairo_t *cr, const LoginUiState *st,
         cairo_paint_with_alpha(cr, 1.0 - cover);
         cairo_restore(cr);
     }
-    if (st->keypad && cover < 1.0)
+    if (st->pattern && cover < 1.0) {
+        cairo_save(cr);
+        cairo_push_group(cr);
+        loginui_pattern_render(cr, st->pattern, st->pattern_fallback, 0, h - kp_h + cover * (kp_h + 20), w);
+        cairo_pop_group_to_source(cr);
+        cairo_paint_with_alpha(cr, 1.0 - cover);
+        cairo_restore(cr);
+    } else if (st->pattern) {
+        st->pattern->laid_out = false;
+    } else if (st->keypad && cover < 1.0) {
         loginui_keypad_render(cr, st->keypad, 0, h - kp_h + cover * (kp_h + 20), w);
-    else if (st->keypad)
+    } else if (st->keypad) {
         st->keypad->n_keys = 0;
+    }
     draw_swipe_hint(cr, w, h, cover);
 }
 
@@ -209,12 +221,14 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
         double group_x = (w - group_w) / 2.0;
         double clock_right = group_x + clock_w;
         double card_x = group_x + clock_w + gap;
-        double card_y = (h - m.h) / 2.0;
+        double pattern_h = st->pattern ? loginui_pattern_height(m.w) + 16 : 0;
+        double grown = st->pattern && m.status_h > 0 ? m.status_h + 8 : 0;
+        double card_y = (h - (m.h - grown) - pattern_h) / 2.0 - grown;
 
         if (card_x_out) *card_x_out = card_x;
         if (card_y_out) *card_y_out = card_y;
         if (card_w_out) *card_w_out = m.w;
-        if (card_h_out) *card_h_out = m.h;
+        if (card_h_out) *card_h_out = m.h + pattern_h;
 
         double clock_block_h = th + 6 + dh;
         double clock_y = (h - clock_block_h) / 2.0 + st->clock_dy;
@@ -225,6 +239,8 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
         cairo_translate(cr, st->card_dx, 0);
         draw_card(cr, st, &m, card_x, card_y);
         cairo_restore(cr);
+        if (st->pattern)
+            loginui_pattern_render(cr, st->pattern, st->pattern_fallback, card_x, card_y + m.h + 16, m.w);
     }
 
     if (faded) {
