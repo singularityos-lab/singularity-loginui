@@ -52,14 +52,17 @@ void loginui_render_brand(cairo_t *cr, int width, int height,
     cairo_restore(cr);
 }
 
-bool loginui_reduced_motion(void) {
-    const char *forced = getenv("SINGULARITY_REDUCE_MOTION");
-    if (forced && forced[0]) return forced[0] == '1';
+GSettingsSchema *lui_desktop_schema(void) {
     const char *schema_id = getenv("SINGULARITY_DESKTOP_SCHEMA");
     if (!schema_id || !schema_id[0]) schema_id = "dev.sinty.desktop";
     GSettingsSchemaSource *source = g_settings_schema_source_get_default();
-    if (!source) return false;
-    GSettingsSchema *schema = g_settings_schema_source_lookup(source, schema_id, TRUE);
+    return source ? g_settings_schema_source_lookup(source, schema_id, TRUE) : NULL;
+}
+
+bool loginui_reduced_motion(void) {
+    const char *forced = getenv("SINGULARITY_REDUCE_MOTION");
+    if (forced && forced[0]) return forced[0] == '1';
+    GSettingsSchema *schema = lui_desktop_schema();
     if (!schema) return false;
     bool reduced = false;
     if (g_settings_schema_has_key(schema, "reduce-motion")) {
@@ -195,7 +198,7 @@ void loginui_render_brand_notice(cairo_t *cr, int width, int height, double scal
     cairo_font_options_set_antialias(fo, CAIRO_ANTIALIAS_GRAY);
     cairo_set_font_options(cr, fo);
     cairo_font_options_destroy(fo);
-    lui_draw_wrapped(cr, font, text, x, y, w, 0.86, 0.86, 0.88);
+    lui_draw_wrapped(cr, font, text, x, y, w, (LoginUiColor){ 0.86, 0.86, 0.88, 1 });
     cairo_pop_group_to_source(cr);
     cairo_paint_with_alpha(cr, alpha);
     cairo_restore(cr);

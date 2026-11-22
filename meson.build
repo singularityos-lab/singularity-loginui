@@ -24,6 +24,8 @@ loginui_sources = files(
   'src/buffer.c',
   'src/draw.c',
   'src/render.c',
+  'src/style.c',
+  'src/caret.c',
   'src/widget.c',
   'src/keypad.c',
   'src/pattern.c',

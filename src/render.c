@@ -7,97 +7,131 @@ bool loginui_compact(int width, int height) {
     return height > width || width < 640;
 }
 
+#define CARD_RADIUS 20.0
+#define CARD_GAP 16.0
+#define CARD_W 360.0
+#define STATUS_GAP 10.0
+#define FIELD_RADIUS 8.0
+#define FIELD_INSET 12.0
+#define FIELD_H 44.0
+#define HINT_H 22.0
+#define DOT_R 4.0
+#define DOT_STEP 14.0
+#define CARET_W 2.0
+#define CARET_H 20.0
+#define SCRIM 0.55
+#define SHADOW_STEPS 8
+#define SHADOW_SPREAD 24.0
+#define SHADOW_DROP 8.0
+#define SHADOW_ROOM (SHADOW_SPREAD + SHADOW_DROP)
+#define NAME_FONT "Sans Semi-Bold 13.5"
+
 typedef struct {
     double pad, avatar, field_h, status_h, w, h;
 } CardMetrics;
 
 static void measure_card(cairo_t *cr, const LoginUiState *st, double card_w, CardMetrics *m) {
     m->w = card_w;
-    m->pad = 14;
+    m->pad = 24;
     m->avatar = 46;
-    m->field_h = 56;
-    m->h = m->pad + m->avatar + 14 + m->field_h + m->pad;
+    m->field_h = st->pattern ? HINT_H : FIELD_H;
+    m->h = m->pad + m->avatar + CARD_GAP + m->field_h + m->pad;
     m->status_h = 0;
     if (st->status_text && st->status_text[0]) {
-        m->status_h = lui_wrapped_height(cr, "Sans 12", st->status_text, card_w - 2 * m->pad - 20) + 14;
-        if (m->status_h < 30) m->status_h = 30;
-        m->h += m->status_h + 8;
+        m->status_h = lui_wrapped_height(cr, "Sans 10", st->status_text, card_w - 2 * m->pad);
+        m->h += m->status_h + STATUS_GAP;
     }
 }
 
-static void draw_card(cairo_t *cr, const LoginUiState *st, const CardMetrics *m, double card_x, double card_y) {
-    double card_w = m->w, card_h = m->h, card_pad = m->pad, avatar = m->avatar, field_h = m->field_h;
-    const char *uname = (st->username && st->username[0]) ? st->username : "user";
+static void draw_avatar(cairo_t *cr, cairo_surface_t *img, double x, double y, double size) {
+    int iw = cairo_image_surface_get_width(img);
+    int ih = cairo_image_surface_get_height(img);
+    double sc = size / (double)(iw < ih ? iw : ih);
+    cairo_save(cr);
+    cairo_arc(cr, x + size / 2.0, y + size / 2.0, size / 2.0, 0, 2 * M_PI);
+    cairo_clip(cr);
+    cairo_translate(cr, x + (size - iw * sc) / 2.0, y + (size - ih * sc) / 2.0);
+    cairo_scale(cr, sc, sc);
+    cairo_set_source_surface(cr, img, 0, 0);
+    cairo_paint(cr);
+    cairo_restore(cr);
+}
 
-    lui_rounded_rect(cr, card_x, card_y, card_w, card_h, 24);
-    cairo_set_source_rgba(cr, 0.176, 0.176, 0.176, 0.97);
+static const char *field_hint(const LoginUiState *st) {
+    if (st->auth_hint) return st->auth_hint;
+    return st->auth_label ? st->auth_label : "Password";
+}
+
+static void draw_field(cairo_t *cr, const LoginUiState *st, double x, double y, double w, double h) {
+    const LoginUiStyle *s = loginui_style();
+    lui_rounded_rect(cr, x, y, w, h, FIELD_RADIUS);
+    loginui_set_color(cr, s->field);
     cairo_fill(cr);
-    lui_rounded_rect(cr, card_x + 0.5, card_y + 0.5, card_w - 1, card_h - 1, 24);
-    cairo_set_source_rgba(cr, 1, 1, 1, 0.08);
-    cairo_set_line_width(cr, 1);
+    lui_rounded_rect(cr, x + 1, y + 1, w - 2, h - 2, FIELD_RADIUS - 1);
+    loginui_set_color(cr, st->status_error ? s->error : s->focus);
+    cairo_set_line_width(cr, 2);
     cairo_stroke(cr);
 
-    double row_cy = card_y + card_pad + avatar / 2.0;
-    double name_x = card_x + card_pad;
-    if (st->avatar) {
-        double ax = card_x + card_pad + avatar / 2.0;
-        cairo_save(cr);
-        cairo_arc(cr, ax, row_cy, avatar / 2.0, 0, 2 * 3.14159265);
-        cairo_clip(cr);
-        int aw = cairo_image_surface_get_width(st->avatar);
-        int ah = cairo_image_surface_get_height(st->avatar);
-        double sc = avatar / (double)(aw < ah ? aw : ah);
-        cairo_translate(cr, ax - avatar / 2.0 + (avatar - aw * sc) / 2.0,
-                            row_cy - avatar / 2.0 + (avatar - ah * sc) / 2.0);
-        cairo_scale(cr, sc, sc);
-        cairo_set_source_surface(cr, st->avatar, 0, 0);
-        cairo_paint(cr);
-        cairo_restore(cr);
-        name_x = card_x + card_pad + avatar + 12;
-    }
-    {
-        int nw, nh;
-        lui_text_size(cr, "Sans Bold 18", uname, &nw, &nh);
-        lui_draw_text(cr, "Sans Bold 18", uname, name_x, row_cy - nh / 2.0, 0, 0.96, 0.96, 0.98);
-    }
+    int dots = st->password_dots > 0 ? st->password_dots : 0;
+    double left = x + FIELD_INSET, room = w - 2 * FIELD_INSET;
+    double used = dots * DOT_STEP + CARET_W;
+    double start = used > room ? left + room - used : left;
+    double middle = y + h / 2.0;
 
-    double fy = card_y + card_pad + avatar + 14;
-    double fx = card_x + card_pad;
-    double fw = card_w - 2 * card_pad;
-    lui_rounded_rect(cr, fx, fy, fw, field_h, 14);
-    cairo_set_source_rgba(cr, 1, 1, 1, 0.08);
+    cairo_save(cr);
+    cairo_rectangle(cr, left, y, room, h);
+    cairo_clip(cr);
+    if (!dots)
+        lui_draw_fit(cr, "Sans 11", field_hint(st), left + CARET_W + 4, middle, room - CARET_W - 4, s->dim);
+    loginui_set_color(cr, s->text);
+    for (int i = 0; i < dots; i++) {
+        double dx = start + i * DOT_STEP + DOT_R;
+        if (dx + DOT_R < left) continue;
+        cairo_new_sub_path(cr);
+        cairo_arc(cr, dx, middle, DOT_R, 0, 2 * M_PI);
+    }
     cairo_fill(cr);
-    const char *auth_label = st->auth_label ? st->auth_label : "Password";
-    lui_draw_text(cr, "Sans Bold 12", auth_label, fx + 14, fy + 8, 0, 0.96, 0.96, 0.98);
-    double vcy = fy + 40;
-    if (st->password_dots <= 0) {
-        int pw, ph;
-        const char *hint = st->auth_hint ? st->auth_hint : auth_label;
-        lui_text_size(cr, "Sans 12", hint, &pw, &ph);
-        lui_draw_text(cr, "Sans 12", hint, fx + 14, vcy - ph / 2.0, 0, 0.6, 0.6, 0.62);
-    } else {
-        int dots = st->password_dots;
-        int max_dots = (int)((fw - 28) / 16) + 1;
-        if (dots > max_dots) dots = max_dots;
-        cairo_set_source_rgb(cr, 0.9, 0.9, 0.92);
-        for (int i = 0; i < dots; i++) {
-            cairo_arc(cr, fx + 18 + i * 16, vcy, 4, 0, 2 * 3.14159265);
-            cairo_fill(cr);
-        }
-    }
-
-    if (st->status_text && st->status_text[0]) {
-        double sy = fy + field_h + 8;
-        double sh = m->status_h;
-        lui_rounded_rect(cr, fx, sy, fw, sh, 9);
-        if (st->status_error) cairo_set_source_rgba(cr, 0.90, 0.30, 0.28, 0.16);
-        else cairo_set_source_rgba(cr, 1, 1, 1, 0.07);
+    if (lui_caret_show(dots)) {
+        cairo_rectangle(cr, start + dots * DOT_STEP, middle - CARET_H / 2.0, CARET_W, CARET_H);
+        loginui_set_color(cr, s->accent);
         cairo_fill(cr);
-        int sht = lui_wrapped_height(cr, "Sans 12", st->status_text, fw - 20);
-        if (st->status_error)
-            lui_draw_wrapped(cr, "Sans 12", st->status_text, fx + 10, sy + (sh - sht) / 2.0, fw - 20, 0.97, 0.52, 0.48);
-        else
-            lui_draw_wrapped(cr, "Sans 12", st->status_text, fx + 10, sy + (sh - sht) / 2.0, fw - 20, 0.82, 0.82, 0.85);
+    }
+    cairo_restore(cr);
+}
+
+static void draw_shadow(cairo_t *cr, double x, double y, double w, double h) {
+    for (int i = SHADOW_STEPS; i > 0; i--) {
+        double spread = SHADOW_SPREAD * i / SHADOW_STEPS;
+        lui_rounded_rect(cr, x - spread, y - spread + SHADOW_DROP, w + 2 * spread, h + 2 * spread, CARD_RADIUS + spread);
+        cairo_set_source_rgba(cr, 0, 0, 0, 0.55 / SHADOW_STEPS / 2);
+        cairo_fill(cr);
+    }
+}
+
+static void draw_card(cairo_t *cr, const LoginUiState *st, const CardMetrics *m, double x, double y) {
+    const LoginUiStyle *s = loginui_style();
+    const char *uname = (st->username && st->username[0]) ? st->username : "user";
+    double inner_x = x + m->pad, inner_w = m->w - 2 * m->pad;
+
+    draw_shadow(cr, x, y, m->w, m->h);
+    loginui_surface(cr, x, y, m->w, m->h, CARD_RADIUS);
+
+    double name_x = inner_x;
+    if (st->avatar) {
+        draw_avatar(cr, st->avatar, inner_x, y + m->pad, m->avatar);
+        name_x += m->avatar + 12;
+    }
+    lui_draw_fit(cr, NAME_FONT, uname, name_x, y + m->pad + m->avatar / 2.0, inner_x + inner_w - name_x, s->text);
+
+    double fy = y + m->pad + m->avatar + CARD_GAP;
+    if (st->pattern)
+        lui_draw_fit(cr, "Sans 11", field_hint(st), inner_x, fy + m->field_h / 2.0, inner_w, s->dim);
+    else
+        draw_field(cr, st, inner_x, fy, inner_w, m->field_h);
+
+    if (m->status_h > 0) {
+        LoginUiColor c = st->status_error ? s->error : s->dim;
+        lui_draw_wrapped(cr, "Sans 10", st->status_text, inner_x, fy + m->field_h + STATUS_GAP, inner_w, c);
     }
 }
 
@@ -132,12 +166,12 @@ static void render_compact(cairo_t *cr, const LoginUiState *st,
 
     int tw, th, dw, dh;
     lui_text_size(cr, "Sans Bold 64", tbuf, &tw, &th);
-    lui_text_size(cr, "Sans 17", dbuf, &dw, &dh);
+    lui_text_size(cr, "Sans Semi-Bold 17", dbuf, &dw, &dh);
     double top = h * 0.11;
     if (top < 56) top = 56;
     double clock_y = top + st->clock_dy;
     lui_draw_text(cr, "Sans Bold 64", tbuf, w / 2.0, clock_y, 1, 1, 1, 1);
-    lui_draw_text(cr, "Sans 17", dbuf, w / 2.0, clock_y + th + 4, 1, 0.85, 0.85, 0.88);
+    lui_draw_text(cr, "Sans Semi-Bold 17", dbuf, w / 2.0, clock_y + th + 4, 1, 1, 1, 1);
     double clock_bottom = top + th + 4 + dh;
 
     double card_w = w - 32;
@@ -159,7 +193,7 @@ static void render_compact(cairo_t *cr, const LoginUiState *st,
     if (cover < 1.0) {
         cairo_save(cr);
         cairo_translate(cr, st->card_dx, cover * 48);
-        cairo_rectangle(cr, card_x - 2, card_y - 2, card_w + 4, m.h + 4);
+        cairo_rectangle(cr, card_x - SHADOW_ROOM, card_y - SHADOW_ROOM, card_w + 2 * SHADOW_ROOM, m.h + 2 * SHADOW_ROOM);
         cairo_clip(cr);
         cairo_push_group(cr);
         draw_card(cr, st, &m, card_x, card_y);
@@ -198,6 +232,14 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
     if (st->background_sharp && st->sharpness > 0.0)
         lui_paint_cover(cr, st->background_sharp, w, h, st->sharpness > 1.0 ? 1.0 : st->sharpness);
 
+    lui_caret_hide();
+    double veil = SCRIM * (1.0 - CLAMP(st->sharpness, 0.0, 1.0)) * (1.0 - CLAMP(st->content_fade, 0.0, 1.0));
+    if (loginui_compact(st->width, st->height)) veil *= 1.0 - CLAMP(st->cover, 0.0, 1.0);
+    if (veil > 0.0) {
+        cairo_set_source_rgba(cr, 0, 0, 0, veil);
+        cairo_paint(cr);
+    }
+
     bool faded = st->content_fade > 0.0;
     if (faded) {
         if (st->content_fade >= 1.0) return;
@@ -211,18 +253,18 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
         const char *dbuf = st->date_str ? st->date_str : "";
         int tw, th, dw, dh;
         lui_text_size(cr, "Sans Bold 60", tbuf, &tw, &th);
-        lui_text_size(cr, "Sans 18", dbuf, &dw, &dh);
+        lui_text_size(cr, "Sans Semi-Bold 18", dbuf, &dw, &dh);
         int clock_w = tw > dw ? tw : dw;
         double gap = 40;
         CardMetrics m;
-        measure_card(cr, st, 300, &m);
+        measure_card(cr, st, CARD_W, &m);
 
         double group_w = clock_w + gap + m.w;
         double group_x = (w - group_w) / 2.0;
         double clock_right = group_x + clock_w;
         double card_x = group_x + clock_w + gap;
         double pattern_h = st->pattern ? loginui_pattern_height(m.w) + 16 : 0;
-        double grown = st->pattern && m.status_h > 0 ? m.status_h + 8 : 0;
+        double grown = st->pattern && m.status_h > 0 ? m.status_h + STATUS_GAP : 0;
         double card_y = (h - (m.h - grown) - pattern_h) / 2.0 - grown;
 
         if (card_x_out) *card_x_out = card_x;
@@ -233,7 +275,7 @@ void loginui_render(cairo_t *cr, const LoginUiState *st,
         double clock_block_h = th + 6 + dh;
         double clock_y = (h - clock_block_h) / 2.0 + st->clock_dy;
         lui_draw_text(cr, "Sans Bold 60", tbuf, clock_right, clock_y, 2, 1, 1, 1);
-        lui_draw_text(cr, "Sans 18", dbuf, clock_right, clock_y + th + 6, 2, 0.85, 0.85, 0.88);
+        lui_draw_text(cr, "Sans Semi-Bold 18", dbuf, clock_right, clock_y + th + 6, 2, 1, 1, 1);
 
         cairo_save(cr);
         cairo_translate(cr, st->card_dx, 0);

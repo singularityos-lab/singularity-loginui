@@ -298,12 +298,19 @@ static void draw_backspace(cairo_t *cr, double cx, double cy, double r, double g
 void loginui_keypad_render(cairo_t *cr, LoginUiKeypad *k, double x, double y, double w) {
     layout(k, x, y, w);
     double h = loginui_keypad_height(k);
+    const LoginUiStyle *s = loginui_style();
 
     lui_rounded_rect(cr, x, y, w, h + 18, 18);
-    cairo_set_source_rgba(cr, 0.11, 0.11, 0.12, 0.97);
+    loginui_set_color(cr, s->panel);
+    cairo_fill_preserve(cr);
+    cairo_pattern_t *wash = cairo_pattern_create_linear(0, y, 0, y + h);
+    cairo_pattern_add_color_stop_rgba(wash, 0, s->accent.r, s->accent.g, s->accent.b, 0.10);
+    cairo_pattern_add_color_stop_rgba(wash, 1, s->accent.r, s->accent.g, s->accent.b, 0.04);
+    cairo_set_source(cr, wash);
     cairo_fill(cr);
+    cairo_pattern_destroy(wash);
     lui_rounded_rect(cr, x + 0.5, y + 0.5, w - 1, h + 18, 18);
-    cairo_set_source_rgba(cr, 1, 1, 1, 0.08);
+    loginui_set_color(cr, s->panel_border);
     cairo_set_line_width(cr, 1);
     cairo_stroke(cr);
 
@@ -313,27 +320,22 @@ void loginui_keypad_render(cairo_t *cr, LoginUiKeypad *k, double x, double y, do
         bool special = key->kind != KEY_CHAR && key->kind != KEY_SPACE;
         bool lit = key->kind == KEY_SHIFT && (k->shift || k->caps);
         lui_rounded_rect(cr, key->x, key->y, key->w, key->h, 10);
-        if (lit) cairo_set_source_rgb(cr, 0.92, 0.92, 0.94);
-        else if (i == k->pressed) cairo_set_source_rgba(cr, 1, 1, 1, 0.30);
-        else cairo_set_source_rgba(cr, 1, 1, 1, special ? 0.16 : 0.10);
+        if (lit && k->caps) loginui_set_color(cr, s->accent);
+        else if (lit || i == k->pressed) loginui_set_color(cr, s->key_pressed);
+        else loginui_set_color(cr, special ? s->key_special : s->key);
         cairo_fill(cr);
-        if (lit && k->caps) {
-            cairo_rectangle(cr, key->x + key->w / 2.0 - 8, key->y + key->h - 9, 16, 2);
-            cairo_set_source_rgb(cr, 0.10, 0.10, 0.11);
-            cairo_fill(cr);
-        }
 
-        double fr = lit ? 0.10 : 0.96, fg = lit ? 0.10 : 0.96, fb = lit ? 0.11 : 0.98;
+        LoginUiColor fg = lit && k->caps ? s->accent_fg : s->text;
         double cx = key->x + key->w / 2.0, cy = key->y + key->h / 2.0;
         if (key->kind == KEY_BACKSPACE) {
-            draw_backspace(cr, cx, cy, fr, fg, fb);
+            draw_backspace(cr, cx, cy, fg.r, fg.g, fg.b);
             continue;
         }
         if (!key->text[0]) continue;
         const char *font = special ? "Sans 13" : (k->page == LOGINUI_KEYPAD_DIGITS ? "Sans 22" : "Sans 18");
         int tw, th;
         lui_text_size(cr, font, key->text, &tw, &th);
-        lui_draw_text(cr, font, key->text, cx, cy - th / 2.0, 1, fr, fg, fb);
+        lui_draw_color(cr, font, key->text, cx, cy - th / 2.0, 1, fg);
     }
 }
 

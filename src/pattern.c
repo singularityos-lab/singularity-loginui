@@ -102,8 +102,9 @@ void loginui_pattern_render(cairo_t *cr, LoginUiPattern *p, const char *fallback
     }
     p->laid_out = true;
 
-    double lr = 1.0, lg = 1.0, lb = 1.0;
-    if (p->error) { lr = 0.97; lg = 0.42; lb = 0.40; }
+    const LoginUiStyle *s = loginui_style();
+    LoginUiColor line = p->error ? s->error : s->accent;
+    LoginUiColor rest = p->error ? s->error : s->text;
 
     if (p->n > 0) {
         cairo_save(cr);
@@ -113,7 +114,7 @@ void loginui_pattern_render(cairo_t *cr, LoginUiPattern *p, const char *fallback
         cairo_move_to(cr, p->cx[p->path[0]], p->cy[p->path[0]]);
         for (int i = 1; i < p->n; i++) cairo_line_to(cr, p->cx[p->path[i]], p->cy[p->path[i]]);
         if (p->tracking) cairo_line_to(cr, p->finger_x, p->finger_y);
-        cairo_set_source_rgba(cr, lr, lg, lb, 0.55);
+        cairo_set_source_rgba(cr, line.r, line.g, line.b, 0.55);
         cairo_stroke(cr);
         cairo_restore(cr);
     }
@@ -121,10 +122,11 @@ void loginui_pattern_render(cairo_t *cr, LoginUiPattern *p, const char *fallback
     for (int i = 0; i < 9; i++) {
         bool on = visited(p, i);
         cairo_arc(cr, p->cx[i], p->cy[i], p->radius * 2.0, 0, 2 * M_PI);
-        cairo_set_source_rgba(cr, lr, lg, lb, on ? 0.22 : 0.08);
+        LoginUiColor c = on ? line : rest;
+        cairo_set_source_rgba(cr, c.r, c.g, c.b, on ? 0.35 : 0.10);
         cairo_fill(cr);
         cairo_arc(cr, p->cx[i], p->cy[i], on ? p->radius : p->radius * 0.62, 0, 2 * M_PI);
-        cairo_set_source_rgba(cr, lr, lg, lb, on ? 1.0 : 0.85);
+        cairo_set_source_rgba(cr, c.r, c.g, c.b, on ? 1.0 : 0.85);
         cairo_fill(cr);
     }
 
@@ -137,9 +139,7 @@ void loginui_pattern_render(cairo_t *cr, LoginUiPattern *p, const char *fallback
         p->link_h = PATTERN_LINK_H;
         p->link_x = x + (w - p->link_w) / 2.0;
         p->link_y = ly;
-        lui_rounded_rect(cr, p->link_x, p->link_y, p->link_w, p->link_h, PATTERN_LINK_H / 2.0);
-        cairo_set_source_rgba(cr, 1, 1, 1, 0.12);
-        cairo_fill(cr);
-        lui_draw_text(cr, "Sans 13", fallback, x + w / 2.0, ly + (PATTERN_LINK_H - th) / 2.0, 1, 0.96, 0.96, 0.98);
+        loginui_surface(cr, p->link_x, p->link_y, p->link_w, p->link_h, PATTERN_LINK_H / 2.0);
+        lui_draw_text(cr, "Sans 13", fallback, x + w / 2.0, ly + (PATTERN_LINK_H - th) / 2.0, 1, s->text.r, s->text.g, s->text.b);
     }
 }

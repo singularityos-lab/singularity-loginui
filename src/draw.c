@@ -11,8 +11,8 @@ static PangoFontDescription *lui_font(const char *desc) {
     return fd;
 }
 
-void lui_draw_text(cairo_t *cr, const char *desc, const char *text,
-                   double x, double y, int align, double r, double g, double b) {
+void lui_draw_color(cairo_t *cr, const char *desc, const char *text,
+                    double x, double y, int align, LoginUiColor color) {
     PangoLayout *layout = pango_cairo_create_layout(cr);
     PangoFontDescription *fd = lui_font(desc);
     pango_layout_set_font_description(layout, fd);
@@ -23,8 +23,30 @@ void lui_draw_text(cairo_t *cr, const char *desc, const char *text,
     double tx = x;
     if (align == 1) tx = x - tw / 2.0;
     else if (align == 2) tx = x - tw;
-    cairo_set_source_rgb(cr, r, g, b);
+    loginui_set_color(cr, color);
     cairo_move_to(cr, tx, y);
+    pango_cairo_show_layout(cr, layout);
+    g_object_unref(layout);
+}
+
+void lui_draw_text(cairo_t *cr, const char *desc, const char *text,
+                   double x, double y, int align, double r, double g, double b) {
+    lui_draw_color(cr, desc, text, x, y, align, (LoginUiColor){ r, g, b, 1 });
+}
+
+void lui_draw_fit(cairo_t *cr, const char *desc, const char *text,
+                  double x, double middle, double width, LoginUiColor color) {
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    PangoFontDescription *fd = lui_font(desc);
+    pango_layout_set_font_description(layout, fd);
+    pango_font_description_free(fd);
+    pango_layout_set_text(layout, text, -1);
+    pango_layout_set_width(layout, (int)(width * PANGO_SCALE));
+    pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+    int tw, th;
+    pango_layout_get_pixel_size(layout, &tw, &th);
+    loginui_set_color(cr, color);
+    cairo_move_to(cr, x, middle - th / 2.0);
     pango_cairo_show_layout(cr, layout);
     g_object_unref(layout);
 }
@@ -50,9 +72,9 @@ int lui_wrapped_height(cairo_t *cr, const char *desc, const char *text, double w
 }
 
 void lui_draw_wrapped(cairo_t *cr, const char *desc, const char *text,
-                      double x, double y, double width, double r, double g, double b) {
+                      double x, double y, double width, LoginUiColor color) {
     PangoLayout *layout = lui_wrapped_layout(cr, desc, text, width);
-    cairo_set_source_rgb(cr, r, g, b);
+    loginui_set_color(cr, color);
     cairo_move_to(cr, x, y);
     pango_cairo_show_layout(cr, layout);
     g_object_unref(layout);
@@ -128,6 +150,7 @@ static cairo_surface_t *cover_scaled(cairo_surface_t *src, int dw, int dh) {
     cairo_scale(cr, scale, scale);
     cairo_set_source_surface(cr, src, 0, 0);
     cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_GOOD);
+    cairo_pattern_set_extend(cairo_get_source(cr), CAIRO_EXTEND_PAD);
     cairo_paint(cr);
     cairo_destroy(cr);
     return c->scaled;

@@ -11,6 +11,23 @@ cairo_surface_t *loginui_load_wallpaper(const char *path, int target_w);
 cairo_surface_t *loginui_load_avatar(const char *path, int size);
 cairo_surface_t *loginui_load_image(const char *path, int max_w, int max_h);
 
+typedef struct {
+    double r, g, b, a;
+} LoginUiColor;
+
+typedef struct {
+    LoginUiColor accent, accent_fg, text, dim, error;
+    LoginUiColor surface, border, card, field, focus;
+    LoginUiColor panel, panel_border, key, key_special, key_pressed;
+} LoginUiStyle;
+
+const LoginUiStyle *loginui_style(void);
+void loginui_set_color(cairo_t *cr, LoginUiColor color);
+bool loginui_caret_tick(void);
+int loginui_caret_timeout(int fallback);
+int loginui_password_chars(const char *text, size_t len);
+void loginui_surface(cairo_t *cr, double x, double y, double w, double h, double radius);
+
 struct loginui_buffer {
     void *data;
     size_t size;
