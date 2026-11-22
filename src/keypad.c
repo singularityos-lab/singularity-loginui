@@ -80,7 +80,7 @@ static void load_keymap(LoginUiKeypad *k, struct xkb_keymap *keymap) {
         for (int i = 0; i < LOGINUI_KEYPAD_LETTERS_MAX; i++) {
             key_text(km, letter_codes[i], 0, k->letters[i][0], sizeof k->letters[i][0]);
             if (!key_text(km, letter_codes[i], 1, k->letters[i][1], sizeof k->letters[i][1]))
-                snprintf(k->letters[i][1], sizeof k->letters[i][1], "%s", k->letters[i][0]);
+                memcpy(k->letters[i][1], k->letters[i][0], sizeof k->letters[i][1]);
         }
         for (int ascii = 1; ascii >= 0; ascii--) {
             for (size_t c = 0; c < sizeof symbol_codes / sizeof symbol_codes[0]; c++) {
@@ -151,7 +151,12 @@ static void push(LoginUiKeypad *k, int kind, const char *text, double weight) {
     memset(key, 0, sizeof *key);
     key->kind = kind;
     key->weight = weight;
-    if (text) snprintf(key->text, sizeof key->text, "%s", text);
+    if (text) {
+        size_t n = strlen(text);
+        if (n >= sizeof key->text) n = sizeof key->text - 1;
+        memmove(key->text, text, n);
+        key->text[n] = '\0';
+    }
 }
 
 static void place_row(LoginUiKeypad *k, int first, double unit, double x, double w, double y, double h) {
