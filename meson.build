@@ -30,6 +30,7 @@ loginui_sources = files(
   'src/keypad.c',
   'src/pattern.c',
   'src/gesture.c',
+  'src/wakeup.c',
 )
 
 loginui_lib = static_library('loginui',
@@ -82,3 +83,10 @@ gesture_test = executable('gesture-test',
   install: false,
 )
 test('gesture', gesture_test)
+
+wakeup_test = executable('wakeup-test',
+  'test/wakeup_test.c',
+  dependencies: [loginui_dep],
+  install: false,
+)
+test('wakeup', wakeup_test)

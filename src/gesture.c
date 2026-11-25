@@ -44,6 +44,13 @@ bool loginui_gesture_idle(const LoginUiGesture *g, bool keypad_shown, double now
     return keypad_shown && g->cover_target == 0.0 && !g->pressing && now - g->last_input > timeout;
 }
 
+int loginui_gesture_idle_timeout(const LoginUiGesture *g, bool keypad_shown, double now, double timeout) {
+    if (!keypad_shown || g->cover_target != 0.0 || g->pressing) return -1;
+    double left = g->last_input + timeout - now;
+    if (left <= 0.0) return 0;
+    return (int)(left * 1000.0) + 1;
+}
+
 LoginUiGestureEvent loginui_gesture_press(LoginUiGesture *g, LoginUiKeypad *kp, bool keypad_shown,
                                           double x, double y, double now) {
     g->last_input = now;

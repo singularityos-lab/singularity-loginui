@@ -67,7 +67,7 @@ int loginui_caret_timeout(int fallback) {
     gint64 half = half_period(), elapsed = now_ms() - caret.since;
     if (!half || elapsed >= BLINK_STOP_MS) return fallback;
     gint64 left = half - elapsed % half;
-    return left < fallback ? (int)left : fallback;
+    return fallback >= 0 && left >= fallback ? fallback : (int)left;
 }
 
 int loginui_password_chars(const char *text, size_t len) {

@@ -114,6 +114,8 @@ bool loginui_gesture_set_cover(LoginUiGesture *g, double target, double now);
 bool loginui_gesture_animating(const LoginUiGesture *g);
 bool loginui_gesture_tick(LoginUiGesture *g, double now);
 bool loginui_gesture_idle(const LoginUiGesture *g, bool keypad_shown, double now, double timeout);
+int loginui_gesture_idle_timeout(const LoginUiGesture *g, bool keypad_shown, double now, double timeout);
+int loginui_next_wakeup(const LoginUiGesture *g, bool keypad_shown, bool idle_armed, double now, double idle_timeout);
 LoginUiGestureEvent loginui_gesture_press(LoginUiGesture *g, LoginUiKeypad *kp, bool keypad_shown,
                                           double x, double y, double now);
 LoginUiGestureEvent loginui_gesture_motion(LoginUiGesture *g, LoginUiKeypad *kp, bool keypad_shown,
